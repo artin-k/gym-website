@@ -19,6 +19,15 @@ if (loginButton) {
     console.error('Element with id "login-button" not found');
 }
 
+const shopButton = document.getElementById("shop-button");
+if (shopButton) {
+    shopButton.onclick = () => {
+        window.location.href = "shopPage.html";
+    };
+} else {
+    console.error('Element with id "shop-button" not found');
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     AOS.init();
 });

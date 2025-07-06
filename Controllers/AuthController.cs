@@ -1,48 +1,53 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MyBackend.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using BCrypt.Net;
 using System.Threading.Tasks;
+using BCrypt.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using System.Collections.Generic;
+using gymWebsite;       // For your User model
+using gymWebsite.Data;  // For your MyDbContext
+using System;
 
-namespace MyBackend.Controllers
+namespace gymWebsite.Controllers
 {
     [ApiController]
     [Route("/api/users/")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly MyDbContext _context;
 
-        public AuthController(AppDbContext context)
+        public AuthController(MyDbContext context)
         {
             _context = context;
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult> Register([FromBody] UserRegisterDto request)
+        public async Task<IActionResult> Register([FromBody] User user )
         {
             try
             {
-                var tables = await _context.Database.ExecuteSqlRawAsync("SELECT name FROM sqlite_master WHERE type='table'");
-                Console.WriteLine($"Tables found: {tables}");
-
-                if (await _context.users.AnyAsync(u => u.Username == request.Username))
-                    return BadRequest("Username already exists");
-
-                var user = new User
+                // Validate input
+                if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
                 {
-                    Username = request.Username,
-                    Password = BCrypt.Net.BCrypt.HashPassword(request.Password)
-                };
+                    return BadRequest("Username and password are required");
+                }
 
-                _context.users.Add(user);
+                // Check if user exists
+                if (await _context.Users.AnyAsync(u => u.Username == user.Username))
+                {
+                    return BadRequest("Username already exists");
+                }
+
+                // Hash password
+                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
+                // Add to database
+                _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                return Ok("User registered successfully");
+                return Ok(new { Message = "Registration successful" });
             }
             catch (Exception ex)
             {
@@ -50,62 +55,78 @@ namespace MyBackend.Controllers
             }
         }
 
-        // Login user
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserLoginDto request)
+        public async Task<IActionResult> Login([FromBody] User loginRequest)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest("Invalid request data");
-
-            var user = await _context.users.FirstOrDefaultAsync(u => u.Username == request.Username);
-
-            if (user == null)
-                return Unauthorized("User not found");
-
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
-                return Unauthorized("Invalid password");
-
-            // Create user claims
-            var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name, user.Username),
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-    };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
+            try
             {
-                IsPersistent = true, // Keep login active even after browser close
-                ExpiresUtc = DateTime.UtcNow.AddDays(7) // Cookie expires in 7 days
-            };
+                // Hardcoded admin check
+                if (loginRequest.Username == "admin" && loginRequest.Password == "1234")
+                {
+                    // Check if admin exists in DB, if not create one
+                    var admin = await _context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+                    if (admin == null)
+                    {
+                        admin = new User
+                        {
+                            Username = "admin",
+                            Password = BCrypt.Net.BCrypt.HashPassword("1234")
+                        };
+                        _context.Users.Add(admin);
+                        await _context.SaveChangesAsync();
+                    }
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                                          new ClaimsPrincipal(claimsIdentity), authProperties);
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Name, "admin"),
+                        new Claim(ClaimTypes.Role, "admin")
+                    };
 
-            return Ok(new { message = "Login successful", username = user.Username });
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
+                    };
+
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
+                        authProperties);
+
+                    return Ok(new { RedirectUrl = "/admin-dashboard" });
+                }
+
+                // Normal user login
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginRequest.Username);
+                if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
+                {
+                    return Unauthorized("Invalid username or password");
+                }
+
+                var userClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Role, "user") // Default role
+                };
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(new ClaimsIdentity(userClaims, CookieAuthenticationDefaults.AuthenticationScheme)),
+                    new AuthenticationProperties { IsPersistent = true });
+
+                return Ok(new { RedirectUrl = "/dashboard" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-
-        // Logout user
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok("Logged out successfully");
+            return Ok(new { Message = "Logout successful" });
         }
-    }
-
-    // DTO for user registration
-    public class UserRegisterDto
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    // DTO for user login
-    public class UserLoginDto
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }
