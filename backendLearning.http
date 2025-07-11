@@ -1,4 +1,4 @@
-@backendLearning_HostAddress = http://localhost:5246
+@backendLearning_HostAddress = http://localhost:5001
 
 GET {{backendLearning_HostAddress}}/weatherforecast/
 Accept: application/json

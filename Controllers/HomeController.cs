@@ -4,6 +4,6 @@ public class HomeController : Controller
 {
     public IActionResult Index()
     {
-        return View("homepage");  // Return home.html
+        return View(); 
     }
 }

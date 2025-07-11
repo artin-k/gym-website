@@ -1,33 +1,49 @@
-﻿using Microsoft.EntityFrameworkCore;
-using gymWebsite.Data; 
+﻿using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // if needed
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using MySqlConnector;
+using gymWebsite.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews(); // Add this line
 
-// Add services to the container
-builder.Services.AddControllers();
-
-// Configure MySQL Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<MyDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    )
+);
 
-// Configure Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Optional for login:
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
     {
-        options.Cookie.HttpOnly = true;
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-        options.LoginPath = "/api/users/login";
-        options.AccessDeniedPath = "/api/users/access-denied";
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
     });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Add these BEFORE app.MapControllers()
+app.UseStaticFiles(); // Serves wwwroot files
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+
+app.UseRouting();
 app.UseHttpsRedirection();
-app.UseAuthentication();  // This enables authentication
-app.UseAuthorization();   // This enables authorization
-app.MapControllers();
+app.UseAuthorization();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

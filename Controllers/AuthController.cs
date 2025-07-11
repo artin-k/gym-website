@@ -6,9 +6,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using System.Collections.Generic;
-using gymWebsite;       // For your User model
-using gymWebsite.Data;  // For your MyDbContext
 using System;
+using gymWebsite.Models;
 
 namespace gymWebsite.Controllers
 {
@@ -24,27 +23,23 @@ namespace gymWebsite.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] User user )
+        public async Task<IActionResult> Register([FromBody] UserClass user)
         {
             try
             {
-                // Validate input
                 if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
-                {
                     return BadRequest("Username and password are required");
-                }
 
-                // Check if user exists
                 if (await _context.Users.AnyAsync(u => u.Username == user.Username))
-                {
                     return BadRequest("Username already exists");
-                }
 
-                // Hash password
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                var newUser = new User
+                {
+                    Username = user.Username,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.Password)
+                };
 
-                // Add to database
-                _context.Users.Add(user);
+                _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Message = "Registration successful" });
@@ -55,22 +50,22 @@ namespace gymWebsite.Controllers
             }
         }
 
+
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] User loginRequest)
+        public async Task<IActionResult> Login([FromBody] UserClass loginRequest)
         {
             try
             {
                 // Hardcoded admin check
                 if (loginRequest.Username == "admin" && loginRequest.Password == "1234")
                 {
-                    // Check if admin exists in DB, if not create one
                     var admin = await _context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
                     if (admin == null)
                     {
                         admin = new User
                         {
                             Username = "admin",
-                            Password = BCrypt.Net.BCrypt.HashPassword("1234")
+                            PasswordHash = BCrypt.Net.BCrypt.HashPassword("1234")
                         };
                         _context.Users.Add(admin);
                         await _context.SaveChangesAsync();
@@ -98,7 +93,7 @@ namespace gymWebsite.Controllers
 
                 // Normal user login
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginRequest.Username);
-                if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.Password))
+                if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
                 {
                     return Unauthorized("Invalid username or password");
                 }
@@ -127,6 +122,30 @@ namespace gymWebsite.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok(new { Message = "Logout successful" });
+        }
+
+        [HttpPost("admin-dashboard")]
+        public async Task<IActionResult> Management()
+        {
+            try
+            {
+                // بررسی اینکه کاربر وارد شده ادمین است
+                if (!User.IsInRole("admin"))
+                {
+                    return Unauthorized("Access denied. Only admins can access this resource.");
+                }
+
+                // بازیابی لیست کاربران از پایگاه داده
+                var users = await _context.Users.ToListAsync();
+
+                // بازگشت لیست کاربران به عنوان پاسخ JSON
+                return Ok(users);
+            }
+            catch (System.Exception ex)
+            {
+                // بازگشت خطا در صورت بروز مشکل
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

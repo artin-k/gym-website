@@ -1,7 +1,5 @@
-﻿console.log("kir");
+﻿
 const apiBaseUrl = "https://localhost:5001/api/users"; // Update if needed
-
-
 
 async function register() {
     console.log("Register function is working!");
@@ -24,7 +22,7 @@ async function register() {
     }
 
     try {
-        const response = await fetch('/api/users/register', {
+        const response = await fetch(`${apiBaseUrl}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -55,23 +53,25 @@ async function login() {
     }
 
     try {
-        const response = await fetch('/api/users/login', {
+        const response = await fetch(`${apiBaseUrl}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
 
-        const resultText = await response.text(); // Get raw response text
-
         if (!response.ok) {
-            alert(resultText || "Invalid username or password");
+            const errorText = await response.text();
+            alert(errorText || "Invalid username or password");
             return;
         }
 
-        if (resultText.toLowerCase().includes("login successful")) {
-            window.location.href = "homepage.html";
+        const result = await response.json();
+
+        if (result.RedirectUrl) {
+            // Redirect based on what the server sends (admin or user dashboard)
+            window.location.href = result.RedirectUrl;
         } else {
-            alert("Login failed: " + resultText);
+            alert("Login succeeded but no redirect URL was returned.");
         }
 
     } catch (error) {
@@ -79,4 +79,5 @@ async function login() {
         alert("Network error. Please try again.");
     }
 }
+
 
