@@ -56,66 +56,25 @@ namespace gymWebsite.Controllers
         {
             try
             {
-                // Hardcoded admin check
                 if (loginRequest.Username == "admin" && loginRequest.Password == "1234")
                 {
-                    var admin = await _context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
-                    if (admin == null)
-                    {
-                        admin = new User
-                        {
-                            Username = "admin",
-                            PasswordHash = BCrypt.Net.BCrypt.HashPassword("1234")
-                        };
-                        _context.Users.Add(admin);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, "admin"),
-                        new Claim(ClaimTypes.Role, "admin")
-                    };
-
-                    var authProperties = new AuthenticationProperties
-                    {
-                        IsPersistent = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(30)
-                    };
-
-                    await HttpContext.SignInAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
-                        authProperties);
-
-                    return Ok(new { RedirectUrl = "/admin-dashboard" });
+                    return Ok(new { redirectUrl = "/admin-dashboard.html" }); // ✅ LOWERCASE
                 }
 
-                // Normal user login
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginRequest.Username);
                 if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
                 {
-                    return Unauthorized("Invalid username or password");
+                    return Unauthorized(new { message = "Invalid username or password" });
                 }
 
-                var userClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, "user") // Default role
-                };
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(new ClaimsIdentity(userClaims, CookieAuthenticationDefaults.AuthenticationScheme)),
-                    new AuthenticationProperties { IsPersistent = true });
-
-                return Ok(new { RedirectUrl = "/dashboard" });
+                return Ok(new { redirectUrl = "/dashboard.html" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
             }
         }
+
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()

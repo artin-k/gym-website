@@ -1,5 +1,5 @@
 ﻿
-const apiBaseUrl = "https://localhost:5001/api/users"; // Update if needed
+const apiBaseUrl = "https://localhost:44392/api/users"; // Update if needed
 
 async function register() {
     console.log("Register function is working!");
@@ -44,6 +44,7 @@ async function register() {
     }
 }
 async function login() {
+    
     const username = document.getElementById("loginUsername").value;
     const password = document.getElementById("loginPassword").value;
 
@@ -59,25 +60,22 @@ async function login() {
             body: JSON.stringify({ username, password })
         });
 
+        const result = await response.json();
+
         if (!response.ok) {
-            const errorText = await response.text();
-            alert(errorText || "Invalid username or password");
+            alert(result.message || "Login failed.");
             return;
         }
 
-        const result = await response.json();
-
-        if (result.RedirectUrl) {
-            // Redirect based on what the server sends (admin or user dashboard)
-            window.location.href = result.RedirectUrl;
+        if (result.redirectUrl) {
+            window.location.href = result.redirectUrl;
         } else {
-            alert("Login succeeded but no redirect URL was returned.");
+            alert("Login failed: No redirect URL in response.");
         }
 
+
     } catch (error) {
-        console.error("Login error:", error);
-        alert("Network error. Please try again.");
+        alert("Network error: " + error.message);
     }
 }
-
 
