@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using MySqlConnector;
 using gymWebsite.Models;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+
+
 // ✅ Configure cookie auth to use actual static login page
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
@@ -35,11 +48,23 @@ var app = builder.Build();
 // ✅ Static files from wwwroot
 app.UseStaticFiles();
 
+app.UseDirectoryBrowser(new DirectoryBrowserOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")),
+    RequestPath = "/uploads"
+});
+
+
 // ✅ Error page in dev
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
+
+
+
+app.UseCors("AllowAll");
 
 // ✅ Middleware pipeline (order matters)
 app.UseRouting();

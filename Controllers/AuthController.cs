@@ -58,7 +58,7 @@ namespace gymWebsite.Controllers
             {
                 if (loginRequest.Username == "admin" && loginRequest.Password == "1234")
                 {
-                    return Ok(new { redirectUrl = "/admin-dashboard.html" }); // ✅ LOWERCASE
+                    return Ok(new { redirectUrl = "/admin-dashboard.html" });
                 }
 
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginRequest.Username);
@@ -74,7 +74,6 @@ namespace gymWebsite.Controllers
                 return StatusCode(500, new { message = $"Internal server error: {ex.Message}" });
             }
         }
-
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
