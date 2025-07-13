@@ -135,31 +135,31 @@ header {
         transition: .3s ease;
     }
 
-        .ham-menu span:nth-child(1) {
-            top: 25%;
-        }
+.ham-menu span:nth-child(1) {
+    top: 25%;
+}
 
-        .ham-menu span:nth-child(3) {
-            top: 75%;
-        }
+.ham-menu span:nth-child(3) {
+    top: 75%;
+}
 
-    .ham-menu.active span {
-        background-color: white;
-    }
+.ham-menu.active span {
+background-color: white;
+}
 
-        .ham-menu.active span:nth-child(1) {
-            top: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
+.ham-menu.active span:nth-child(1) {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
 
-        .ham-menu.active span:nth-child(2) {
-            opacity: 0;
-        }
+.ham-menu.active span:nth-child(2) {
+    opacity: 0;
+}
 
-        .ham-menu.active span:nth-child(3) {
-            top: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-        }
+.ham-menu.active span:nth-child(3) {
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
 
 
 /* Ensure the parent takes full width and has no padding/margin */
@@ -217,9 +217,9 @@ header {
     border-radius: 10px;
 }
 
-    .card:hover {
-        transform: scale(1.05);
-    }
+.card:hover {
+    transform: scale(1.05);
+}
 
 
 .glow {
@@ -229,3 +229,31 @@ header {
     text-align: center;
     text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 15px #00bfff;
 }
+
+.carousel {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    overflow: hidden;
+    position: relative;
+    margin: 20px auto;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s ease-in-out;
+}
+
+.carousel-track img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+
+

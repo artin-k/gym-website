@@ -21,30 +21,62 @@ namespace gymWebsite.Controllers
         public async Task<IActionResult> GetHomepageImages()
         {
             var images = await _context.Images
-                .OrderBy(i => i.Id)
+                .OrderBy(i => i.SortOrder)
                 .Take(3)
                 .Select(i => new
                 {
                     i.Id,
                     i.FileName,
-                    FilePath = i.FilePath
+                    i.FilePath
                 })
                 .ToListAsync();
 
             return Ok(images);
         }
 
+        // GET: api/images/all
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllImages()
+        {
+            var images = await _context.Images
+                .OrderBy(i => i.SortOrder)
+                .ToListAsync();
+
+            return Ok(images);
+        }
+
+        // DELETE: api/images/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteImage(int id)
+        {
+            var image = await _context.Images.FindAsync(id);
+            if (image == null)
+                return NotFound();
+
+            var fullPath = Path.Combine(_env.WebRootPath, image.FilePath.TrimStart('/'));
+
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+
+            _context.Images.Remove(image);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        // PUT: api/images/sort/{id}
+        [HttpPut("sort/{id}")]
+        public async Task<IActionResult> UpdateSort(int id, [FromBody] int newSort)
+        {
+            var image = await _context.Images.FindAsync(id);
+            if (image == null) return NotFound();
+
+            image.SortOrder = newSort;
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+
     }
 }
-
-
-/*            // Optional file existence check — only helpful during development
-            var uploadPath = Path.Combine(_env.WebRootPath, "uploads");
-            foreach (var image in images)
-            {
-                var fullPath = Path.Combine(uploadPath, image.FileName);
-                if (!System.IO.File.Exists(fullPath))
-                {
-                    Console.WriteLine($"[⚠] Missing file: {fullPath}");
-                }
-            }*/

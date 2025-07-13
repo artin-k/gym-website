@@ -52,29 +52,41 @@ window.addEventListener("scroll", function () {
 });
 
 
-fetch("https://localhost:44392/api/images/homepage")
-    .then(response => response.json())
-    .then(data => {
-        console.log("Fetched images:", data); // ✅ Check what's here
+    fetch("https://localhost:44392/api/images/homepage")
+  .then(response => response.json())
+  .then(data => {
+    const container = document.getElementById("banner-container");
 
-        const container = document.getElementById("banner-container");
+    if (!Array.isArray(data) || data.length === 0) {
+        container.innerHTML = "<p>No images found.</p>";
+    return;
+    }
 
-        if (!Array.isArray(data) || data.length === 0) {
-            alert("No images received.");
-            return;
-        }
+    const track = document.createElement("div");
+    track.className = "carousel-track";
 
-        data.forEach(img => {
-            alert(`FilePath: ${img.filePath}`); // ✅ Should show each path
-        });
-
-        container.innerHTML = data.map(img => `
-            <img src="${img.filePath}" alt="${img.fileName}" width="300">
-        `).join("");
-    })
-    .catch(err => {
-        console.error("Image load error:", err);
-        alert("Error loading images: " + err);
+    data.forEach(img => {
+      const image = document.createElement("img");
+    image.src = img.filePath;
+    image.alt = img.fileName;
+    track.appendChild(image);
     });
+
+    container.appendChild(track);
+
+    let index = 0;
+    const slideCount = data.length;
+
+    setInterval(() => {
+        index = (index + 1) % slideCount;
+    track.style.transform = `translateX(-${index * 100}%)`;
+    }, 5000); // ✅ change every 5 seconds
+  })
+  .catch(err => {
+        console.error("Image load error:", err);
+    document.getElementById("banner-container").innerHTML = "<p>Error loading images</p>";
+  });
+
+
 
 
