@@ -67,7 +67,7 @@ namespace gymWebsite.Controllers
                     return Unauthorized(new { message = "Invalid username or password" });
                 }
 
-                return Ok(new { redirectUrl = "/dashboard.html" });
+                return Ok(new { redirectUrl = "/profile-dashboard.html" });
             }
             catch (Exception ex)
             {

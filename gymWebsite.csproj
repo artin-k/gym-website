@@ -39,7 +39,7 @@
 	  <Content Update="wwwroot\admin-dashboard.html">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </Content>
-	  <Content Update="wwwroot\dashboard.html">
+	  <Content Update="wwwroot\profile-dashboard.html">
 	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
